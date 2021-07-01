@@ -3,9 +3,17 @@
 const Hapi = require('@hapi/hapi');
 const mongoose = require('mongoose');
 
-const mongoURL = "mongodb+srv://napauladrs:<password>@cluster0.874r9.mongodb.net/zaplinkdb?retryWrites=true&w=majority"
+const mongoURL = "mongodb+srv://qaninja:qaninja@cluster0.jxp29.gcp.mongodb.net/zaplinkdb?retryWrites=true&w=majority"
 
-mongoose.mongoose.connect()
+mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
+
+mongoose.connection.on('connected', () => {
+    console.log('MongoDB Connected');
+})
+
+mongoose.connection.on('error', (error) => {
+    console.log('MongoDB Error' + error);
+})
 
 const contactRoutes = require('./routes/contact.routes')
 
@@ -13,7 +21,12 @@ const init = async () => {
 
     const server = Hapi.server({
         port: 3000,
-        host: 'localhost'
+        host: 'localhost',
+        routes: {
+            cors: {
+                origin: ['*']
+            }
+        }
     });
 
     server.route({
@@ -27,14 +40,18 @@ const init = async () => {
 
     server.route(contactRoutes)
 
-    await server.start();
-    console.log('Server running on %s', server.info.uri);
-};
+    server.start((err) => {
+        if (err) {
+            throw err;
+        }
+        console.log('Server running on %s', server.info.uri);
+    });
 
-process.on('unhandledRejection', (err) => {
+    process.on('unhandledRejection', (err) => {
+        console.log(err);
+        process.exit(1);
+    });
 
-    console.log(err);
-    process.exit(1);
-});
-
-init();
+    exports.init = async () => {
+        return server;
+    }    
